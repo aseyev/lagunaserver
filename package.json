@@ -1,0 +1,36 @@
+{
+  "name": "lagunaserver",
+  "version": "1.0.0",
+  "description": "laguna proxy-server app",
+  "main": "app.js",
+  "scripts": {
+    "start": "cross-env NODE_ENV=production node app.js",
+    "server": "nodemon app.js",
+    "dev": "cross-env NODE_ENV=production concurrently \"npm run server\""
+  },
+  "keywords": [
+    "mern",
+    "laguna",
+    "server",
+    "proxy"
+  ],
+  "author": "Anton Aseev <aseyev.1982@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "config": "^3.3.1",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "express-http-proxy": "^1.6.2",
+    "express-validator": "^6.6.0",
+    "express-xml-bodyparser": "^0.3.0",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.9.25",
+    "xml2js": "^0.4.23"
+  },
+  "devDependencies": {
+    "concurrently": "^5.2.0",
+    "cross-env": "^7.0.2",
+    "nodemon": "^2.0.4"
+  }
+}
