@@ -5,6 +5,8 @@ const cors = require("cors");
 const path = require("path");
 const express = require("express");
 const xml2js = require("xml2js");
+const fetch = require('node-fetch');
+
 // const parseString = require("xml2js").parseString;
 
 const TimerOfUpdatingList = config.get("TimerOfUpdatingList") //sec
@@ -67,7 +69,6 @@ app.use(
         interceptedData[0].card_giv[0] = "Anton";
         // console.log('interceptedData: ', interceptedData)
       }
-      var builder = new xml2js.Builder();
       
       // if (changedData.ActiveMemberResponseMessage) {
         //   console.log(
@@ -76,6 +77,7 @@ app.use(
           //   );
           // }
       return proxyResData;
+      // var builder = new xml2js.Builder();
       // var xmlChangedData = builder.buildObject(changedData);
       // console.log('xmlChangedData: ', xmlChangedData)
       // return xmlChangedData
@@ -100,7 +102,22 @@ async function start() {
 
 start();
 
-const activeMemberListLoader = setInterval(() => {
+const activeMemberListLoader = setInterval( async () => {
+
+  let response = await fetch(config.get("testUrl"), {
+    method: 'POST',
+    headers: {
+    'Content-Type': 'text/xml' 
+  },
+  body: '<?xml version="1.0" encoding="UTF-8"?> <RequestMessage ElementType="ActiveMember"> </RequestMessage>'
+  });
+
+  if (response.ok) {
+    // let json = await response.json();
+    console.log(`response.body: `, response.text())
+  } else {
+    alert("HTTP eRRor: " + response.status);
+  }
 
   console.log(`request for ActiveMembersList was sent. It will be updated after ${TimerOfUpdatingList} sec!`);
 }, 1000 * TimerOfUpdatingList);
