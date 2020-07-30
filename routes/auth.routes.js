@@ -4,7 +4,7 @@ const { check, validationResult } = require('express-validator')
 const User = require('../models/User')
 const router = Router()
 
-//api/auth/register
+//all routes are to '/' because of Aspen API and all of them are POST with XML
 router.post(
   '/register', 
   [
