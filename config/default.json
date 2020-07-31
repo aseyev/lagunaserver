@@ -3,5 +3,5 @@
   "jwtSecret": "some secret string",
   "mongoUri": "mongodb+srv://AntonAseev:zaq12wsx@cluster0.gwg57.gcp.mongodb.net/app?retryWrites=true&w=majority",
   "testUrl": "https://api.aspenclubsoftware.com/webole.asp",
-  "TimerOfUpdatingList": 10
+  "TimerOfUpdatingList": 1000
 }

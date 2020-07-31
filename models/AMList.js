@@ -5,8 +5,9 @@ const { Schema, model, Types } = require("mongoose");
 // and returns this string from this db 
 
 const schema = new Schema({
-  rawList: { type: String },
-  lastUpdate: { type: Date, required: true }
+  // users: { type: Types.ObjectId },
+  users: { type: String },
+  date: { type: Date, required: true }
 });
 
 module.exports = model("AMList", schema);
