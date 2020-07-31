@@ -5,11 +5,12 @@ const cors = require("cors");
 const path = require("path");
 const express = require("express");
 const xml2js = require("xml2js");
-const fetch = require('node-fetch');
+const fetch = require("node-fetch");
+const AMList = require('./models/AMList')
 
 // const parseString = require("xml2js").parseString;
 
-const TimerOfUpdatingList = config.get("TimerOfUpdatingList") //sec
+const TimerOfUpdatingList = config.get("TimerOfUpdatingList"); //sec
 
 const userCreds = {
   card_giv: "",
@@ -37,24 +38,42 @@ app.use(
   "/",
   proxy(config.get("testUrl"), {
     timeout: 10000,
-    limit: "1mb",
+    limit: "5mb",
     proxyErrorHandler: (err, res, next) => {
       next(err);
     },
 
+    filter: async (req, res) => {
+      // let changedData = await xml2js.parseStringPromise(req);
+      // console.log('filter getOwnPropertyNames req: ', Object.getOwnPropertyNames(resq) )
+      console.log('filter getOwnPropertyNames req: ', Object.getOwnPropertyNames(req.params) )
+      // console.log('filter reQ: ', req)
+      // for (var prop in req.params) {
+      //   console.log( "req." + prop + " = " + req[prop] );
+      // }
+      return true;
+      // return req.method == 'GET';
+    },
+
     proxyReqBodyDecorator: async (body) => {
       let changedData = await xml2js.parseStringPromise(body);
-      if (changedData.RequestMessage) {
-        console.log('changedData.RequestMessage: ', changedData.RequestMessage["$"].ElementType)
-        console.log('body: ', body)
+      if (changedData && changedData.RequestMessage) {
+        // console.log(
+        //   "changedData.RequestMessage: ",
+        //   changedData.RequestMessage["$"].ElementType
+        // );
+        console.log("body: ", body);
         if (changedData.RequestMessage["$"].ElementType === "MbsCardLogin4") {
           for (var prop in changedData.RequestMessage) {
             console.log(
-              "RequestMessage." + prop + " = " + changedData.RequestMessage[prop]
+              "RequestMessage." +
+                prop +
+                " = " +
+                changedData.RequestMessage[prop]
             );
           }
         }
-        // if 
+        // if
       }
       return body;
     },
@@ -69,13 +88,13 @@ app.use(
         interceptedData[0].card_giv[0] = "Anton";
         // console.log('interceptedData: ', interceptedData)
       }
-      
+
       // if (changedData.ActiveMemberResponseMessage) {
-        //   console.log(
-          //     `XXX ActiveMemberResponseMessage`,
-          //     changedData.ActiveMemberResponseMessage
-          //   );
-          // }
+      //   console.log(
+      //     `XXX ActiveMemberResponseMessage`,
+      //     changedData.ActiveMemberResponseMessage
+      //   );
+      // }
       return proxyResData;
       // var builder = new xml2js.Builder();
       // var xmlChangedData = builder.buildObject(changedData);
@@ -86,6 +105,55 @@ app.use(
 );
 
 const PORT = config.get("port") || 5050;
+
+
+const activeMemberListLoader = setInterval(async () => {
+  let currentTime = new Date().getTime();
+  console.log('currentTime', currentTime)
+  try {
+    const previousList = await AMList.findOne();
+    // console.log('previousList!', previousList)
+    let checkDate = previousList ? (currentTime - previousList.date.getTime()) : 10000000
+    console.log('checkDate!', checkDate)
+    if (checkDate > 1000000 ) {
+      let response = await fetch(config.get("testUrl"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/xml",
+        },
+        body:
+          '<?xml version="1.0" encoding="UTF-8"?> <RequestMessage ElementType="ActiveMember"> </RequestMessage>',
+      });
+      if (!response.ok) {
+        throw CustomError("HTTP eRRor:! ");
+      } 
+      else {
+        body = await response.text()
+        let now = new Date()
+        if (!previousList) {
+          let currentList = new AMList({
+            date: now,
+            users: body
+          })
+          await currentList.save()
+        } else {
+          previousList.overwrite({
+            date: now,
+            users: body
+          })
+          await previousList.save()
+        }
+        // console.log('AMList body: ', body)
+      }
+    }
+  } catch (error) {
+    console.log("HTTP eRRor XYZ: ", error);
+  }
+
+  console.log(
+    `request for ActiveMembersList was sent. It will be updated after ${TimerOfUpdatingList} sec!`
+  );
+}, 1000 * TimerOfUpdatingList);
 
 async function start() {
   try {
@@ -101,25 +169,5 @@ async function start() {
 }
 
 start();
-
-const activeMemberListLoader = setInterval( async () => {
-
-  let response = await fetch(config.get("testUrl"), {
-    method: 'POST',
-    headers: {
-    'Content-Type': 'text/xml' 
-  },
-  body: '<?xml version="1.0" encoding="UTF-8"?> <RequestMessage ElementType="ActiveMember"> </RequestMessage>'
-  });
-
-  if (response.ok) {
-    // let json = await response.json();
-    console.log(`response.body: `, response.text())
-  } else {
-    alert("HTTP eRRor: " + response.status);
-  }
-
-  console.log(`request for ActiveMembersList was sent. It will be updated after ${TimerOfUpdatingList} sec!`);
-}, 1000 * TimerOfUpdatingList);
 
 app.listen(PORT, () => console.log(`App has been started on pOrT ${PORT}!`));
