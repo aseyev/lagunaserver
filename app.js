@@ -19,6 +19,7 @@ const userCreds = {
   password: "",
   photo: "",
 };
+let currentRequest = ''
 
 const app = express();
 
@@ -34,6 +35,22 @@ if (process.env.NODE_ENV === "production") {
 }
 // app.use(xmlparser());
 
+// app.post ("/", async (req,res) => {
+//   if (req.method == 'POST') {
+//     console.log("POST");
+//     var body = '';
+//     req.on('data', function (data) {
+//         body += data;
+//         console.log("Partial body: " + body);
+//     });
+//     req.on('end', function () {
+//         console.log("Body: " + body);
+//     });
+//     // res.writeHead(200, {'Content-Type': 'text/xml'});
+//     // res.end('post received');
+//   }
+// })
+
 app.use(
   "/",
   proxy(config.get("testUrl"), {
@@ -46,24 +63,36 @@ app.use(
     filter: async (req, res) => {
       // let changedData = await xml2js.parseStringPromise(req);
       // console.log('filter getOwnPropertyNames req: ', Object.getOwnPropertyNames(resq) )
-      console.log('filter getOwnPropertyNames req: ', Object.getOwnPropertyNames(req.params) )
-      // console.log('filter reQ: ', req)
+      // console.log('filter getOwnPropertyNames req: ', Object.getOwnPropertyNames(req.params) )
+      // console.log('filter reQ: ', req.body)
+      // console.log('filter req: ', req)
       // for (var prop in req.params) {
       //   console.log( "req." + prop + " = " + req[prop] );
       // }
       return true;
       // return req.method == 'GET';
     },
+//DELETE proxyReqOptDecorator FOR THE SAFETY OF PRODUCTION BUILD! IT'S ONLY FOR THE TEST SERVER (NO SSL)
+    proxyReqOptDecorator: function(proxyReqOpts, originalReq) {
+      proxyReqOpts.rejectUnauthorized = false
+      return proxyReqOpts;
+    },
 
     proxyReqBodyDecorator: async (body) => {
-      let changedData = await xml2js.parseStringPromise(body);
+      currentRequest = ''
+      let changedData = ''
+      changedData = await xml2js.parseStringPromise(body);
       if (changedData && changedData.RequestMessage) {
-        // console.log(
-        //   "changedData.RequestMessage: ",
-        //   changedData.RequestMessage["$"].ElementType
-        // );
-        console.log("body: ", body);
-        if (changedData.RequestMessage["$"].ElementType === "MbsCardLogin4") {
+        currentRequest = changedData.RequestMessage["$"].ElementType
+        console.log('currentRequest: ', currentRequest)
+        if (currentRequest === "TeeHold") {
+          console.log("POST");
+          app.post ("/", (req,res) => {
+            console.log("POST",req);
+            return
+          }
+        )}
+        if (currentRequest === "MbsCardLogin4") {
           for (var prop in changedData.RequestMessage) {
             console.log(
               "RequestMessage." +
@@ -81,31 +110,19 @@ app.use(
     userResDecorator: async (proxyRes, proxyResData) => {
       // console.log(`proxyResDat:`, proxyResData)
       let changedData = await xml2js.parseStringPromise(proxyResData);
-      console.dir(changedData);
+      // console.dir(changedData);
       // console.log('Done, xml?', changedData);
       if (changedData.MbsCardLogin4ResponseMessage) {
         let interceptedData = changedData.MbsCardLogin4ResponseMessage.Response;
         interceptedData[0].card_giv[0] = "Anton";
         // console.log('interceptedData: ', interceptedData)
       }
-
-      // if (changedData.ActiveMemberResponseMessage) {
-      //   console.log(
-      //     `XXX ActiveMemberResponseMessage`,
-      //     changedData.ActiveMemberResponseMessage
-      //   );
-      // }
       return proxyResData;
-      // var builder = new xml2js.Builder();
-      // var xmlChangedData = builder.buildObject(changedData);
-      // console.log('xmlChangedData: ', xmlChangedData)
-      // return xmlChangedData
     },
   })
 );
 
 const PORT = config.get("port") || 5050;
-
 
 const activeMemberListLoader = setInterval(async () => {
   let currentTime = new Date().getTime();
