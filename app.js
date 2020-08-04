@@ -86,13 +86,13 @@ app.use(
         currentRequest = changedData.RequestMessage["$"].ElementType
         console.log('currentRequest: ', currentRequest)
         if (currentRequest === "TeeHold") {
-          console.log("POST");
+          console.log("currentRequest SHOULD BE REPLACED: ", currentRequest);
           app.post ("/", (req,res) => {
-            console.log("POST",req);
+            console.log("!!! REQUEST REPLACED!!!", req);
             return
           }
         )}
-        if (currentRequest === "MbsCardLogin4") {
+        if (currentRequest) { // === "MbsCardLogin4"
           for (var prop in changedData.RequestMessage) {
             console.log(
               "RequestMessage." +
