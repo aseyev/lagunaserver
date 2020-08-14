@@ -73,10 +73,10 @@ app.use(
       // return req.method == 'GET';
     },
 //DELETE proxyReqOptDecorator FOR THE SAFETY OF PRODUCTION BUILD! IT'S ONLY FOR THE TEST SERVER (NO SSL)
-    // proxyReqOptDecorator: function(proxyReqOpts, originalReq) {
-    //   proxyReqOpts.rejectUnauthorized = false
-    //   return proxyReqOpts;
-    // },
+    proxyReqOptDecorator: function(proxyReqOpts, originalReq) {
+      proxyReqOpts.rejectUnauthorized = false
+      return proxyReqOpts;
+    },
 
     proxyReqBodyDecorator: async (body) => {
       currentRequest = ''
