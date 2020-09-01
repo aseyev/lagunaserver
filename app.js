@@ -24,7 +24,7 @@ let currentRequest = ''
 const app = express();
 
 app.use(cors());
-app.use("/api/auth", require("./routes/auth.routes"));
+// app.use("/api/auth", require("./routes/auth.routes"));
 
 if (process.env.NODE_ENV === "production") {
   app.use("/", express.static(path.join(__dirname, "client", "dist")));
@@ -52,6 +52,71 @@ if (process.env.NODE_ENV === "production") {
 // })
 
 app.use(
+  "/test",
+  proxy(config.get("testUrl"), {
+    timeout: 10000,
+    limit: "5mb",
+    proxyErrorHandler: (err, res, next) => {
+      next(err);
+    },
+
+    filter: async (req, res) => {
+      return true;
+    },
+    
+//DELETE proxyReqOptDecorator FOR THE SAFETY OF PRODUCTION BUILD! 
+//IT'S ONLY FOR THE TEST SERVER (NO SSL)
+    proxyReqOptDecorator: function(proxyReqOpts, originalReq) {
+      proxyReqOpts.rejectUnauthorized = false
+      return proxyReqOpts;
+    },
+
+    proxyReqBodyDecorator: async (body) => {
+      currentRequest = ''
+      let changedData = ''
+      changedData = await xml2js.parseStringPromise(body);
+      if (changedData && changedData.RequestMessage) {
+        currentRequest = changedData.RequestMessage["$"].ElementType
+        console.log('currentRequest/API: ', currentRequest)
+        if (currentRequest === "TeeHold") {
+          console.log("currentRequest SHOULD BE REPLACED: ", currentRequest);
+          app.post ("/", (req,res) => {
+            console.log("!!! REQUEST REPLACED!!!", req);
+            return
+          }
+        )}
+        if (currentRequest) { // === "MbsCardLogin4"
+          for (var prop in changedData.RequestMessage) {
+            console.log(
+              "RequestMessage." +
+                prop +
+                " = " +
+                changedData.RequestMessage[prop]
+            );
+          }
+        }
+        // if
+      }
+      return body;
+    },
+
+    userResDecorator: async (proxyRes, proxyResData) => {
+      console.log(`proxyResDat:`, proxyResData)
+      let changedData = await xml2js.parseStringPromise(proxyResData);
+      // console.dir(changedData);
+      console.log('Done, xml?', changedData);
+      // if (changedData.MbsCardLogin4ResponseMessage) {
+      //   let interceptedData = changedData.MbsCardLogin4ResponseMessage.Response;
+      //   interceptedData[0].card_giv[0] = "Anton";
+      //   console.log('interceptedData: ', interceptedData)
+      // }
+      // return interceptedData;
+      return proxyResData;
+    },
+  })
+);
+
+app.use(
   "/",
   proxy(config.get("testUrl"), {
     timeout: 10000,
@@ -61,18 +126,11 @@ app.use(
     },
 
     filter: async (req, res) => {
-      // let changedData = await xml2js.parseStringPromise(req);
-      // console.log('filter getOwnPropertyNames req: ', Object.getOwnPropertyNames(resq) )
-      // console.log('filter getOwnPropertyNames req: ', Object.getOwnPropertyNames(req.params) )
-      // console.log('filter reQ: ', req.body)
-      // console.log('filter req: ', req)
-      // for (var prop in req.params) {
-      //   console.log( "req." + prop + " = " + req[prop] );
-      // }
       return true;
-      // return req.method == 'GET';
     },
-//DELETE proxyReqOptDecorator FOR THE SAFETY OF PRODUCTION BUILD! IT'S ONLY FOR THE TEST SERVER (NO SSL)
+    
+//DELETE proxyReqOptDecorator FOR THE SAFETY OF PRODUCTION BUILD! 
+//IT'S ONLY FOR THE TEST SERVER (NO SSL)
     proxyReqOptDecorator: function(proxyReqOpts, originalReq) {
       proxyReqOpts.rejectUnauthorized = false
       return proxyReqOpts;
@@ -92,10 +150,10 @@ app.use(
             return
           }
         )}
-        if (currentRequest) { // === "MbsCardLogin4"
+        if (currentRequest === "MbsCardLogin4") { // === "MbsCardLogin4"
           for (var prop in changedData.RequestMessage) {
             console.log(
-              "RequestMessage." +
+              "RequestMessage1." +
                 prop +
                 " = " +
                 changedData.RequestMessage[prop]
