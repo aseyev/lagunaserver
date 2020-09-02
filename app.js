@@ -67,43 +67,53 @@ app.use(
     },
 
     userResDecorator: async (proxyRes, responseData) => {
-      console.log(`proxyResponse Payload:`, responseData)
+      // console.log(`proxyResponse Payload:`, responseData)
       let encodedData = await xml2js.parseStringPromise(responseData);
-      // let responseName = ''
-      let responseWrap = ''
-      let responseIn = ''
-      let responseBody = ''
+      // console.log(`proxyResponse encodedData:`, encodedData)
+      if (encodedData && encodedData.MbsCardLogin4ResponseMessage) {
+        let responseLogin4 = encodedData.MbsCardLogin4ResponseMessage.Response[0]
+        console.log(`responseLogin4 body:`, responseLogin4)
+        console.log(`responseLogin4 AnswerStatus:`, responseLogin4.AnswerStatus[0])
+        if (responseLogin4 && responseLogin4.AnswerStatus[0] == 'OK') {
+          console.log('Ready to GO!')
+        }
+      
+      }
+      // if (encodedData.MbsCardLogin4ResponseMessage) {
+      //   console.log('encodedData: ', console.dir(encodedData.MbsCardLogin4ResponseMessage[0]))
+      // }
+
       if (encodedData) { // === "MbsCardLogin4"
-      console.log('TEST response processing, name: ', encodedData)
-        for (let prop in encodedData) {
-          responseWrap = encodedData[prop]
-          console.log("XML Response Wrap (Obj???): ");
-          console.dir(responseWrap)
-            if (responseWrap) {
-              for (let prop in responseWrap) {
-                responseIn = responseWrap[prop]
-                console.log("XML Response In (Arr???): ");
-                console.dir(responseIn)
-                if (responseIn) {
-                  for (let prop in responseIn) {
-                    responseBody = responseIn[prop]
-                    console.log("XML RESPONSE BODY (Obj Again...): ");
-                    console.dir(responseBody)
-                    console.log('response props encoded?')
-                    for (const prop in responseBody) {
-                      if (responseBody.hasOwnProperty(prop)) {
-                        const element = responseBody[prop];
-                        console.log(`prop: ${prop} value: ${element}`)
-                        if (prop == 'AnswerStatus' && element == 'OK') {
-                          console.log('READY TO PROCESSING RESPONSE!!!')
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
+        // console.log('TEST response processing, name: ', encodedData)
+        // for (let prop in encodedData) {
+        //   responseWrap = encodedData[prop]
+        //   console.log("XML Response Wrap (Obj???): ");
+        //   console.dir(responseWrap)
+        //     if (responseWrap) {
+        //       for (let prop in responseWrap) {
+        //         responseIn = responseWrap[prop]
+        //         console.log("XML Response In (Arr???): ");
+        //         console.dir(responseIn)
+        //         if (responseIn) {
+        //           for (let prop in responseIn) {
+        //             responseBody = responseIn[prop]
+        //             console.log("XML RESPONSE BODY (Obj Again...): ");
+        //             console.dir(responseBody)
+        //             console.log('response props encoded?')
+        //             for (const prop in responseBody) {
+        //               if (responseBody.hasOwnProperty(prop)) {
+        //                 const element = responseBody[prop];
+        //                 console.log(`prop: ${prop} value: ${element}`)
+        //                 if (prop == 'AnswerStatus' && element == 'OK') {
+        //                   console.log('READY TO PROCESSING RESPONSE!!!')
+        //                 }
+        //               }
+        //             }
+        //           }
+        //         }
+        //       }
+        //     }
+        //   }
         // if (responseIn) { // === "MbsCardLogin4"
         //   // console.dir(responseIn)
         //   responseBody = responseIn[0]
@@ -111,7 +121,8 @@ app.use(
         //   console.dir(responseBody)
         // }
       }
-      return responseBody;
+      
+      return responseData;
     },
   })
 );
