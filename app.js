@@ -24,32 +24,6 @@ let currentRequest = ''
 const app = express();
 
 app.use(cors());
-// app.use("/api/auth", require("./routes/auth.routes"));
-
-if (process.env.NODE_ENV === "production") {
-  app.use("/", express.static(path.join(__dirname, "client", "dist")));
-
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "client", "dist", "index.html"));
-  });
-}
-// app.use(xmlparser());
-
-// app.post ("/", async (req,res) => {
-//   if (req.method == 'POST') {
-//     console.log("POST");
-//     var body = '';
-//     req.on('data', function (data) {
-//         body += data;
-//         console.log("Partial body: " + body);
-//     });
-//     req.on('end', function () {
-//         console.log("Body: " + body);
-//     });
-//     // res.writeHead(200, {'Content-Type': 'text/xml'});
-//     // res.end('post received');
-//   }
-// })
 
 app.use(
   "/test",
@@ -73,45 +47,71 @@ app.use(
 
     proxyReqBodyDecorator: async (body) => {
       currentRequest = ''
-      let changedData = ''
-      changedData = await xml2js.parseStringPromise(body);
-      if (changedData && changedData.RequestMessage) {
-        currentRequest = changedData.RequestMessage["$"].ElementType
-        console.log('currentRequest/API: ', currentRequest)
-        if (currentRequest === "TeeHold") {
-          console.log("currentRequest SHOULD BE REPLACED: ", currentRequest);
-          app.post ("/", (req,res) => {
-            console.log("!!! REQUEST REPLACED!!!", req);
-            return
-          }
-        )}
+      let requestData = ''
+      requestData = await xml2js.parseStringPromise(body);
+      if (requestData && requestData.RequestMessage) {
+        currentRequest = requestData.RequestMessage["$"].ElementType
+        console.log('TEST endpoint request: ', currentRequest)
         if (currentRequest) { // === "MbsCardLogin4"
-          for (var prop in changedData.RequestMessage) {
+          for (var prop in requestData.RequestMessage) {
             console.log(
               "RequestMessage." +
                 prop +
                 " = " +
-                changedData.RequestMessage[prop]
+                requestData.RequestMessage[prop]
             );
           }
         }
-        // if
       }
       return body;
     },
 
-    userResDecorator: async (proxyRes, proxyResData) => {
-      console.log(`proxyResDat:`, proxyResData)
-      let changedData = await xml2js.parseStringPromise(proxyResData);
-      // console.dir(changedData);
-      console.log('Done, xml?', changedData);
-      // if (changedData.MbsCardLogin4ResponseMessage) {
-      //   let interceptedData = changedData.MbsCardLogin4ResponseMessage.Response;
-      //   interceptedData[0].card_giv[0] = "Anton";
-      //   console.log('interceptedData: ', interceptedData)
-      // }
-      // return interceptedData;
-      return proxyResData;
+    userResDecorator: async (proxyRes, responseData) => {
+      console.log(`proxyResponse Payload:`, responseData)
+      let encodedData = await xml2js.parseStringPromise(responseData);
+      // let responseName = ''
+      let responseWrap = ''
+      let responseIn = ''
+      let responseBody = ''
+      if (encodedData) { // === "MbsCardLogin4"
+      console.log('TEST response processing, name: ', encodedData)
+        for (let prop in encodedData) {
+          responseWrap = encodedData[prop]
+          console.log("XML Response Wrap (Obj???): ");
+          console.dir(responseWrap)
+            if (responseWrap) {
+              for (let prop in responseWrap) {
+                responseIn = responseWrap[prop]
+                console.log("XML Response In (Arr???): ");
+                console.dir(responseIn)
+                if (responseIn) {
+                  for (let prop in responseIn) {
+                    responseBody = responseIn[prop]
+                    console.log("XML RESPONSE BODY (Obj Again...): ");
+                    console.dir(responseBody)
+                    console.log('response props encoded?')
+                    for (const prop in responseBody) {
+                      if (responseBody.hasOwnProperty(prop)) {
+                        const element = responseBody[prop];
+                        console.log(`prop: ${prop} value: ${element}`)
+                        if (prop == 'AnswerStatus' && element == 'OK') {
+                          console.log('READY TO PROCESSING RESPONSE!!!')
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        // if (responseIn) { // === "MbsCardLogin4"
+        //   // console.dir(responseIn)
+        //   responseBody = responseIn[0]
+        //   console.log("XML Response Body: ");
+        //   console.dir(responseBody)
+        // }
+      }
+      return responseBody;
     },
   })
 );
@@ -142,41 +142,38 @@ app.use(
       changedData = await xml2js.parseStringPromise(body);
       if (changedData && changedData.RequestMessage) {
         currentRequest = changedData.RequestMessage["$"].ElementType
-        console.log('currentRequest: ', currentRequest)
-        if (currentRequest === "TeeHold") {
-          console.log("currentRequest SHOULD BE REPLACED: ", currentRequest);
-          app.post ("/", (req,res) => {
-            console.log("!!! REQUEST REPLACED!!!", req);
-            return
-          }
-        )}
-        if (currentRequest === "MbsCardLogin4") { // === "MbsCardLogin4"
-          for (var prop in changedData.RequestMessage) {
-            console.log(
-              "RequestMessage1." +
-                prop +
-                " = " +
-                changedData.RequestMessage[prop]
-            );
-          }
-        }
-        // if
+        console.log('common endpoint Request Name: ', currentRequest)
+        // if (currentRequest === "TeeHold") {
+        //   console.log("currentRequest SHOULD BE REPLACED: ", currentRequest);
+        //   app.post ("/", (req,res) => {
+        //     console.log("!!! REQUEST REPLACED!!!", req);
+        //     return
+        //   }
+        // )}
+        // if (currentRequest === "MbsCardLogin4") { // === "MbsCardLogin4"
+        //   for (var prop in changedData.RequestMessage) {
+        //     console.log(
+        //       "RequestMessage1." +
+        //         prop +
+        //         " = " +
+        //         changedData.RequestMessage[prop]
+        //     );
+        //   }
+        // }
       }
       return body;
     },
 
-    userResDecorator: async (proxyRes, proxyResData) => {
-      // console.log(`proxyResDat:`, proxyResData)
-      let changedData = await xml2js.parseStringPromise(proxyResData);
-      // console.dir(changedData);
-      // console.log('Done, xml?', changedData);
-      if (changedData.MbsCardLogin4ResponseMessage) {
-        let interceptedData = changedData.MbsCardLogin4ResponseMessage.Response;
-        interceptedData[0].card_giv[0] = "Anton";
-        // console.log('interceptedData: ', interceptedData)
-      }
-      return proxyResData;
-    },
+    // userResDecorator: async (proxyRes, proxyResData) => {
+    //   // console.log(`proxyResDat:`, proxyResData)
+    //   let changedData = await xml2js.parseStringPromise(proxyResData);
+    //   if (changedData.MbsCardLogin4ResponseMessage) {
+    //     let interceptedData = changedData.MbsCardLogin4ResponseMessage.Response;
+    //     interceptedData[0].card_giv[0] = "Anton";
+    //     // console.log('interceptedData: ', interceptedData)
+    //   }
+    //   return proxyResData;
+    // },
   })
 );
 
