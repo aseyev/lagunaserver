@@ -12,16 +12,17 @@ const AMList = require('./models/AMList')
 
 const TimerOfUpdatingList = config.get("TimerOfUpdatingList"); //sec
 
-const userCreds = {
+let userCreds = {
   card_giv: "",
   card_sur: "",
-  cardno: "",
-  password: "",
-  photo: "",
+  Cardno: "",
+  // Password: "",
+  // photo: "",
   userId: "",
   userToken: ""
 };
-let currentRequest = ''
+// let usersArr = new Set()
+let usersArr = []
 
 const app = express();
 
@@ -54,8 +55,11 @@ app.use(
       if (requestData && requestData.RequestMessage) {
         currentRequest = requestData.RequestMessage["$"].ElementType
         console.log('TEST endpoint request: ', currentRequest)
-        if (currentRequest) { // === "MbsCardLogin4"
-          for (var prop in requestData.RequestMessage) {
+        if (currentRequest && currentRequest === "MbsCardLogin4") {
+          console.log('currentRequest: ', currentRequest)
+          userCreds.Cardno = requestData.RequestMessage.Cardno[0]
+          console.log('userCreds: ', userCreds)
+          for (const prop in requestData.RequestMessage) {
             console.log(
               "RequestMessage." +
                 prop +
@@ -77,7 +81,36 @@ app.use(
         console.log(`responseLogin4 body:`, responseLogin4)
         console.log(`responseLogin4 AnswerStatus:`, responseLogin4.AnswerStatus[0])
         if (responseLogin4 && responseLogin4.AnswerStatus[0] == 'OK') {
-          console.log('Ready to GO!')
+          userCreds.card_sur = responseLogin4.card_sur[0]
+          userCreds.card_giv = responseLogin4.card_giv[0]
+          console.log('userCreds: ', userCreds)
+          let userCheck = {}
+          userCheck = usersArr.find(function (user) {
+            return user.Cardno === userCreds.Cardno
+          })
+          if (userCheck) {
+            console.log('USER EXISTS!: ', userCheck)
+          }
+          else usersArr.push(userCreds)
+          // usersArr.forEach(function (user) {
+          //   for (const prop in user) {
+          //     if (user.hasOwnProperty(prop)) {
+          //       const element = user[prop];
+                
+          //     }
+          //   }
+          // })
+          // usersList.add(userCreds)
+          //later: delete all props by for-in and ...
+          userCreds = {
+            card_giv: "",
+            card_sur: "",
+            Cardno: "",
+            Password: "",
+            userId: "",
+            userToken: ""
+          };
+          console.log('usersArr: ', usersArr);
         }
       }
           
