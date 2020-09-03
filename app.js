@@ -18,6 +18,8 @@ const userCreds = {
   cardno: "",
   password: "",
   photo: "",
+  userId: "",
+  userToken: ""
 };
 let currentRequest = ''
 
@@ -77,51 +79,8 @@ app.use(
         if (responseLogin4 && responseLogin4.AnswerStatus[0] == 'OK') {
           console.log('Ready to GO!')
         }
-      
       }
-      // if (encodedData.MbsCardLogin4ResponseMessage) {
-      //   console.log('encodedData: ', console.dir(encodedData.MbsCardLogin4ResponseMessage[0]))
-      // }
-
-      if (encodedData) { // === "MbsCardLogin4"
-        // console.log('TEST response processing, name: ', encodedData)
-        // for (let prop in encodedData) {
-        //   responseWrap = encodedData[prop]
-        //   console.log("XML Response Wrap (Obj???): ");
-        //   console.dir(responseWrap)
-        //     if (responseWrap) {
-        //       for (let prop in responseWrap) {
-        //         responseIn = responseWrap[prop]
-        //         console.log("XML Response In (Arr???): ");
-        //         console.dir(responseIn)
-        //         if (responseIn) {
-        //           for (let prop in responseIn) {
-        //             responseBody = responseIn[prop]
-        //             console.log("XML RESPONSE BODY (Obj Again...): ");
-        //             console.dir(responseBody)
-        //             console.log('response props encoded?')
-        //             for (const prop in responseBody) {
-        //               if (responseBody.hasOwnProperty(prop)) {
-        //                 const element = responseBody[prop];
-        //                 console.log(`prop: ${prop} value: ${element}`)
-        //                 if (prop == 'AnswerStatus' && element == 'OK') {
-        //                   console.log('READY TO PROCESSING RESPONSE!!!')
-        //                 }
-        //               }
-        //             }
-        //           }
-        //         }
-        //       }
-        //     }
-        //   }
-        // if (responseIn) { // === "MbsCardLogin4"
-        //   // console.dir(responseIn)
-        //   responseBody = responseIn[0]
-        //   console.log("XML Response Body: ");
-        //   console.dir(responseBody)
-        // }
-      }
-      
+          
       return responseData;
     },
   })
@@ -146,45 +105,6 @@ app.use(
       proxyReqOpts.rejectUnauthorized = false
       return proxyReqOpts;
     },
-
-    proxyReqBodyDecorator: async (body) => {
-      currentRequest = ''
-      let changedData = ''
-      changedData = await xml2js.parseStringPromise(body);
-      if (changedData && changedData.RequestMessage) {
-        currentRequest = changedData.RequestMessage["$"].ElementType
-        console.log('common endpoint Request Name: ', currentRequest)
-        // if (currentRequest === "TeeHold") {
-        //   console.log("currentRequest SHOULD BE REPLACED: ", currentRequest);
-        //   app.post ("/", (req,res) => {
-        //     console.log("!!! REQUEST REPLACED!!!", req);
-        //     return
-        //   }
-        // )}
-        // if (currentRequest === "MbsCardLogin4") { // === "MbsCardLogin4"
-        //   for (var prop in changedData.RequestMessage) {
-        //     console.log(
-        //       "RequestMessage1." +
-        //         prop +
-        //         " = " +
-        //         changedData.RequestMessage[prop]
-        //     );
-        //   }
-        // }
-      }
-      return body;
-    },
-
-    // userResDecorator: async (proxyRes, proxyResData) => {
-    //   // console.log(`proxyResDat:`, proxyResData)
-    //   let changedData = await xml2js.parseStringPromise(proxyResData);
-    //   if (changedData.MbsCardLogin4ResponseMessage) {
-    //     let interceptedData = changedData.MbsCardLogin4ResponseMessage.Response;
-    //     interceptedData[0].card_giv[0] = "Anton";
-    //     // console.log('interceptedData: ', interceptedData)
-    //   }
-    //   return proxyResData;
-    // },
   })
 );
 
