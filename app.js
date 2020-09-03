@@ -21,7 +21,7 @@ let userCreds = {
   userId: "",
   userToken: ""
 };
-// let usersArr = new Set()
+
 let usersArr = []
 
 const app = express();
@@ -54,67 +54,60 @@ app.use(
       requestData = await xml2js.parseStringPromise(body);
       if (requestData && requestData.RequestMessage) {
         currentRequest = requestData.RequestMessage["$"].ElementType
-        console.log('TEST endpoint request: ', currentRequest)
+        // console.log('TEST endpoint request: ', currentRequest)
         if (currentRequest && currentRequest === "MbsCardLogin4") {
-          console.log('currentRequest: ', currentRequest)
+          // console.log('currentRequest: ', currentRequest)
           userCreds.Cardno = requestData.RequestMessage.Cardno[0]
-          console.log('userCreds: ', userCreds)
-          for (const prop in requestData.RequestMessage) {
-            console.log(
-              "RequestMessage." +
-                prop +
-                " = " +
-                requestData.RequestMessage[prop]
-            );
-          }
+          // console.log('userCreds: ', userCreds)
+          // for (const prop in requestData.RequestMessage) {
+          //   console.log(
+          //     "RequestMessage." +
+          //       prop +
+          //       " = " +
+          //       requestData.RequestMessage[prop]
+          //   );
+          // }
         }
       }
       return body;
     },
 
     userResDecorator: async (proxyRes, responseData) => {
-      // console.log(`proxyResponse Payload:`, responseData)
-      let encodedData = await xml2js.parseStringPromise(responseData);
-      // console.log(`proxyResponse encodedData:`, encodedData)
+      console.log('income responseData: ', responseData)
+      let encodedData = await xml2js.parseStringPromise(responseData)
       if (encodedData && encodedData.MbsCardLogin4ResponseMessage) {
         let responseLogin4 = encodedData.MbsCardLogin4ResponseMessage.Response[0]
-        console.log(`responseLogin4 body:`, responseLogin4)
-        console.log(`responseLogin4 AnswerStatus:`, responseLogin4.AnswerStatus[0])
+        encodedData.MbsCardLogin4ResponseMessage.Response[0].photo = ''
+        encodedData.MbsCardLogin4ResponseMessage.Response[0].jwt = 'dfgsdfgt56767vbmnki787'
         if (responseLogin4 && responseLogin4.AnswerStatus[0] == 'OK') {
           userCreds.card_sur = responseLogin4.card_sur[0]
           userCreds.card_giv = responseLogin4.card_giv[0]
-          console.log('userCreds: ', userCreds)
+          // console.log('userCreds: ', userCreds)
           let userCheck = {}
           userCheck = usersArr.find(function (user) {
             return user.Cardno === userCreds.Cardno
           })
           if (userCheck) {
-            console.log('USER EXISTS!: ', userCheck)
+            // console.log('USER EXISTS!: ', userCheck)
           }
           else usersArr.push(userCreds)
-          // usersArr.forEach(function (user) {
-          //   for (const prop in user) {
-          //     if (user.hasOwnProperty(prop)) {
-          //       const element = user[prop];
-                
-          //     }
-          //   }
-          // })
-          // usersList.add(userCreds)
+          
           //later: delete all props by for-in and ...
           userCreds = {
             card_giv: "",
             card_sur: "",
             Cardno: "",
-            Password: "",
             userId: "",
             userToken: ""
           };
           console.log('usersArr: ', usersArr);
         }
       }
-          
-      return responseData;
+      let builder = new xml2js.Builder();
+      let xmlChangedData = builder.buildObject(encodedData);
+      console.log('xmlChangedData: ', xmlChangedData)
+      return xmlChangedData    
+      // return responseData;
     },
   })
 );
