@@ -5,6 +5,7 @@ const cors = require("cors");
 const path = require("path");
 const express = require("express");
 const xml2js = require("xml2js");
+const jwt = require('jsonwebtoken');
 const fetch = require("node-fetch");
 const AMList = require('./models/AMList')
 
@@ -58,7 +59,12 @@ app.use(
         if (currentRequest && currentRequest === "MbsCardLogin4") {
           // console.log('currentRequest: ', currentRequest)
           userCreds.Cardno = requestData.RequestMessage.Cardno[0]
-          // console.log('userCreds: ', userCreds)
+          userCreds.userToken = jwt.sign(
+            {userCard: userCreds.Cardno},
+            config.get('jwtSecret'),
+            {expiresIn: '1h'}
+          )
+          console.log('userCreds.userToken: ', userCreds.userToken)
           // for (const prop in requestData.RequestMessage) {
           //   console.log(
           //     "RequestMessage." +
@@ -78,8 +84,8 @@ app.use(
       if (encodedData && encodedData.MbsCardLogin4ResponseMessage) {
         let responseLogin4 = encodedData.MbsCardLogin4ResponseMessage.Response[0]
         encodedData.MbsCardLogin4ResponseMessage.Response[0].photo = ''
-        encodedData.MbsCardLogin4ResponseMessage.Response[0].jwt = 'dfgsdfgt56767vbmnki787'
         if (responseLogin4 && responseLogin4.AnswerStatus[0] == 'OK') {
+          encodedData.MbsCardLogin4ResponseMessage.Response[0].jwt = userCreds.userToken
           userCreds.card_sur = responseLogin4.card_sur[0]
           userCreds.card_giv = responseLogin4.card_giv[0]
           // console.log('userCreds: ', userCreds)
@@ -130,6 +136,27 @@ app.use(
     proxyReqOptDecorator: function(proxyReqOpts, originalReq) {
       proxyReqOpts.rejectUnauthorized = false
       return proxyReqOpts;
+    },
+
+    proxyReqBodyDecorator: async (body) => {
+      currentRequest = ''
+      let requestData = ''
+      requestData = await xml2js.parseStringPromise(body);
+      if (requestData && requestData.RequestMessage) {
+        currentRequest = requestData.RequestMessage["$"].ElementType
+        // console.log('TEST endpoint request: ', currentRequest)
+        if (currentRequest) {
+          // console.log('currentRequest: ', currentRequest)
+          let currentToken = requestData.whereIsToken
+          console.log('currentToken: ', currentToken)
+          jwt.verify(currentToken, config.get('jwtSecret'), function(err, decoded) {
+            console.log(decoded.foo)
+            if (err) {} // block this request with err message
+            else {} //return body
+          });
+        }
+      }
+      return body;
     },
   })
 );
@@ -184,6 +211,7 @@ const activeMemberListLoader = setInterval(async () => {
   );
 }, 1000 * TimerOfUpdatingList);
 
+//mongoDB activation
 async function start() {
   try {
     await mongoose.connect(config.get("mongoUri"), {
@@ -196,7 +224,6 @@ async function start() {
     process.exit(1);
   }
 }
-
 start();
 
 app.listen(PORT, () => console.log(`App has been started on pOrT ${PORT}!`));
