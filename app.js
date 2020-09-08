@@ -62,7 +62,7 @@ app.use(
           userCreds.userToken = jwt.sign(
             {userCard: userCreds.Cardno},
             config.get('jwtSecret'),
-            {expiresIn: '1h'}
+            {expiresIn: '2m'}
           )
           console.log('userCreds.userToken: ', userCreds.userToken)
           // for (const prop in requestData.RequestMessage) {
@@ -79,7 +79,7 @@ app.use(
     },
 
     userResDecorator: async (proxyRes, responseData) => {
-      console.log('income responseData: ', responseData)
+      // console.log('income responseData: ', responseData)
       let encodedData = await xml2js.parseStringPromise(responseData)
       if (encodedData && encodedData.MbsCardLogin4ResponseMessage) {
         let responseLogin4 = encodedData.MbsCardLogin4ResponseMessage.Response[0]
@@ -111,7 +111,7 @@ app.use(
       }
       let builder = new xml2js.Builder();
       let xmlChangedData = builder.buildObject(encodedData);
-      console.log('xmlChangedData: ', xmlChangedData)
+      // console.log('xmlChangedData: ', xmlChangedData)
       return xmlChangedData    
       // return responseData;
     },
@@ -124,6 +124,11 @@ app.use(
     timeout: 10000,
     limit: "5mb",
     proxyErrorHandler: (err, res, next) => {
+      if (err || err.code) {
+        console.log('error Handler', err)
+        console.log('error Handler', err.code)
+        return res.status(401).send('Token Error!'); 
+      }
       next(err);
     },
 
@@ -144,16 +149,23 @@ app.use(
       requestData = await xml2js.parseStringPromise(body);
       if (requestData && requestData.RequestMessage) {
         currentRequest = requestData.RequestMessage["$"].ElementType
-        // console.log('TEST endpoint request: ', currentRequest)
+        console.log('Current request Name: ', currentRequest)
+        // console.log('TEST endpoint requestData.RequestMessage.jwt[0]: ', requestData.RequestMessage.jwt[0])
         if (currentRequest) {
-          // console.log('currentRequest: ', currentRequest)
-          let currentToken = requestData.whereIsToken
-          console.log('currentToken: ', currentToken)
-          jwt.verify(currentToken, config.get('jwtSecret'), function(err, decoded) {
-            console.log(decoded.foo)
-            if (err) {} // block this request with err message
-            else {} //return body
-          });
+          if (requestData.RequestMessage.jwt) {
+            let currentToken = requestData.RequestMessage.jwt[0]
+            // console.log('currentToken:', currentToken)
+            let decoded = jwt.verify(currentToken, config.get('jwtSecret'));
+            // try {
+            //   let decoded = jwt.verify(currentToken, config.get('jwtSecret'));
+            //   console.log('decoded', decoded)
+            // } catch(err) {
+            //   console.log('ERR!: ', err)
+            //   return 
+            // }
+
+          } else {console.log('No JWT in this request')}
+
         }
       }
       return body;
@@ -163,53 +175,53 @@ app.use(
 
 const PORT = config.get("port") || 5050;
 
-const activeMemberListLoader = setInterval(async () => {
-  let currentTime = new Date().getTime();
-  console.log('currentTime', currentTime)
-  try {
-    const previousList = await AMList.findOne();
-    // console.log('previousList!', previousList)
-    let checkDate = previousList ? (currentTime - previousList.date.getTime()) : 10000000
-    console.log('checkDate!', checkDate)
-    if (checkDate > 1000000 ) {
-      let response = await fetch(config.get("testUrl"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/xml",
-        },
-        body:
-          '<?xml version="1.0" encoding="UTF-8"?> <RequestMessage ElementType="ActiveMember"> </RequestMessage>',
-      });
-      if (!response.ok) {
-        throw CustomError("HTTP eRRor:! ");
-      } 
-      else {
-        body = await response.text()
-        let now = new Date()
-        if (!previousList) {
-          let currentList = new AMList({
-            date: now,
-            users: body
-          })
-          await currentList.save()
-        } else {
-          previousList.overwrite({
-            date: now,
-            users: body
-          })
-          await previousList.save()
-        }
-        // console.log('AMList body: ', body)
-      }
-    }
-  } catch (error) {
-    console.log("HTTP eRRor XYZ: ", error);
-  }
+// const activeMemberListLoader = setInterval(async () => {
+//   let currentTime = new Date().getTime();
+//   console.log('currentTime', currentTime)
+//   try {
+//     const previousList = await AMList.findOne();
+//     // console.log('previousList!', previousList)
+//     let checkDate = previousList ? (currentTime - previousList.date.getTime()) : 10000000
+//     console.log('checkDate!', checkDate)
+//     if (checkDate > 1000000 ) {
+//       let response = await fetch(config.get("testUrl"), {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "text/xml",
+//         },
+//         body:
+//           '<?xml version="1.0" encoding="UTF-8"?> <RequestMessage ElementType="ActiveMember"> </RequestMessage>',
+//       });
+//       if (!response.ok) {
+//         throw CustomError("HTTP eRRor:! ");
+//       } 
+//       else {
+//         body = await response.text()
+//         let now = new Date()
+//         if (!previousList) {
+//           let currentList = new AMList({
+//             date: now,
+//             users: body
+//           })
+//           await currentList.save()
+//         } else {
+//           previousList.overwrite({
+//             date: now,
+//             users: body
+//           })
+//           await previousList.save()
+//         }
+//         // console.log('AMList body: ', body)
+//       }
+//     }
+//   } catch (error) {
+//     console.log("HTTP eRRor XYZ: ", error);
+//   }
 
-  console.log(
-    `request for ActiveMembersList was sent. It will be updated after ${TimerOfUpdatingList} sec!`
-  );
-}, 1000 * TimerOfUpdatingList);
+//   console.log(
+//     `request for ActiveMembersList was sent. It will be updated after ${TimerOfUpdatingList} sec!`
+//   );
+// }, 1000 * TimerOfUpdatingList);
 
 //mongoDB activation
 async function start() {
