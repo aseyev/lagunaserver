@@ -57,7 +57,7 @@ app.use(
         currentRequest = requestData.RequestMessage["$"].ElementType
         // console.log('TEST endpoint request: ', currentRequest)
         if (currentRequest && currentRequest === "MbsCardLogin4") {
-          // console.log('currentRequest: ', currentRequest)
+          console.log('currentRequest: ', currentRequest)
           userCreds.Cardno = requestData.RequestMessage.Cardno[0]
           userCreds.userToken = jwt.sign(
             {userCard: userCreds.Cardno},
@@ -65,14 +65,14 @@ app.use(
             {expiresIn: '2m'}
           )
           console.log('userCreds.userToken: ', userCreds.userToken)
-          // for (const prop in requestData.RequestMessage) {
-          //   console.log(
-          //     "RequestMessage." +
-          //       prop +
-          //       " = " +
-          //       requestData.RequestMessage[prop]
-          //   );
-          // }
+          for (const prop in requestData.RequestMessage) {
+            console.log(
+              "RequestMessage." +
+                prop +
+                " = " +
+                requestData.RequestMessage[prop]
+            );
+          }
         }
       }
       return body;
@@ -127,7 +127,7 @@ app.use(
       if (err || err.code) {
         console.log('error Handler', err)
         console.log('error Handler', err.code)
-        return res.status(401).send('Token Error!'); 
+        return res.status(401).send('Sorry, your session was closed'); 
       }
       next(err);
     },
