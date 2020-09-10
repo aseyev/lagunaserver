@@ -19,7 +19,7 @@ let userCreds = {
   Cardno: "",
   // Password: "",
   // photo: "",
-  userId: "",
+  // userId: "",
   userToken: ""
 };
 
@@ -62,17 +62,17 @@ app.use(
           userCreds.userToken = jwt.sign(
             {userCard: userCreds.Cardno},
             config.get('jwtSecret'),
-            {expiresIn: '2m'}
+            {expiresIn: config.get('jwtExpiresIn')}
           )
           console.log('userCreds.userToken: ', userCreds.userToken)
-          for (const prop in requestData.RequestMessage) {
-            console.log(
-              "RequestMessage." +
-                prop +
-                " = " +
-                requestData.RequestMessage[prop]
-            );
-          }
+          // for (const prop in requestData.RequestMessage) {
+          //   console.log(
+          //     "RequestMessage." +
+          //       prop +
+          //       " = " +
+          //       requestData.RequestMessage[prop]
+          //   );
+          // }
         }
       }
       return body;
@@ -81,6 +81,7 @@ app.use(
     userResDecorator: async (proxyRes, responseData) => {
       // console.log('income responseData: ', responseData)
       let encodedData = await xml2js.parseStringPromise(responseData)
+      console.log('login response encodedData:', encodedData)
       if (encodedData && encodedData.MbsCardLogin4ResponseMessage) {
         let responseLogin4 = encodedData.MbsCardLogin4ResponseMessage.Response[0]
         encodedData.MbsCardLogin4ResponseMessage.Response[0].photo = ''
@@ -103,7 +104,7 @@ app.use(
             card_giv: "",
             card_sur: "",
             Cardno: "",
-            userId: "",
+            // userId: "",
             userToken: ""
           };
           console.log('usersArr: ', usersArr);
@@ -224,18 +225,18 @@ const PORT = config.get("port") || 5050;
 // }, 1000 * TimerOfUpdatingList);
 
 //mongoDB activation
-async function start() {
-  try {
-    await mongoose.connect(config.get("mongoUri"), {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      useCreateIndex: true,
-    });
-  } catch (e) {
-    console.log("server error: ", e.message);
-    process.exit(1);
-  }
-}
-start();
+// async function start() {
+//   try {
+//     await mongoose.connect(config.get("mongoUri"), {
+//       useNewUrlParser: true,
+//       useUnifiedTopology: true,
+//       useCreateIndex: true,
+//     });
+//   } catch (e) {
+//     console.log("server error: ", e.message);
+//     process.exit(1);
+//   }
+// }
+// start();
 
 app.listen(PORT, () => console.log(`App has been started on pOrT ${PORT}!`));
